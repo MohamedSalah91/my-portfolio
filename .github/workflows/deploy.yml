@@ -1,1 +1,67 @@
- 
+name: CI/CD Pipeline for Portfolio
+
+on: 
+  push:
+    branches: [main]
+
+  pull_requst: 
+    branches: [main]
+
+jobs: 
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps: 
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Validate project structure
+      run:  |
+        echo "Checking required files..."
+        if [ ! -f "Dockerfile" ]; then
+          echo "❌ ERROR: Dockerfile not found!"
+          exit 1
+        fi
+        if [ ! -f "src/index.html" ]; then
+          echo "❌ ERROR: index.html not found!"
+          exit 1
+        fi
+        echo "✅ All required files are present"
+
+    - name: Build Docker Image
+      run:
+        echo "Building Docker image..."
+        docker build -t portfolio:${{ github.sha }} .
+        echo "✅ Docker image built successfully"
+    - name: 🧪 Test Docker container
+      run: |
+        echo "Testing Docker container..."
+        # شغل الحاوية مؤقتاً للتجربة
+        docker run -d --name test-container -p 8080:80 portfolio:${{ github.sha }}
+        sleep 5
+        
+        # اختبر إذا التطبيق شغال
+        echo "Testing HTTP response..."
+        STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 || echo "000")
+        
+        if [ "$STATUS_CODE" = "200" ]; then
+          echo "✅ Container is responding correctly (HTTP 200)"
+        else
+          echo "❌ ERROR: Container not responding properly (HTTP $STATUS_CODE)"
+          exit 1
+        fi
+        
+        # أوقف ونظف
+        docker stop test-container
+        docker rm test-container
+    
+    - name: 📊 Success report
+      run: |
+        echo "## 🎉 CI/CD Pipeline Results" >> $GITHUB_STEP_SUMMARY
+        echo "**Status:** ✅ SUCCESS" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📋 Build Details:" >> $GITHUB_STEP_SUMMARY
+        echo "- **Docker Image:** portfolio:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ✅ All checks passed!" >> $GITHUB_STEP_SUMMARY
