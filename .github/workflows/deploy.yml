@@ -1,36 +1,30 @@
 name: CI/CD Pipeline for Portfolio
-
 on:
   push:
     branches: [ master  ]
   pull_request:
     branches: [ master ]
-
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: 📥 Checkout code
+    - name: Checkout code
       uses: actions/checkout@v3
-    - name: 🧹 Lint HTML
+    - name: Lint HTML
       run: |
         set -e
         npm install -g htmlhint
         htmlhint src/index.html
-
-    - name: 🐳 Lint Dockerfile
+    - name: Lint Dockerfile
       run: |
         set -e
         docker run --rm -i hadolint/hadolint < Dockerfile
-
-    - name: 🧹 Lint YAML
+    - name: Lint YAML
       run: |
         set -e
         pip install yamllint
         yamllint .
-
-    - name: 🔍 Validate project structure
+    - name: Validate project structure
       run: |
         echo "Checking required files..."
         if [ ! -f "Dockerfile" ]; then
@@ -42,35 +36,29 @@ jobs:
           exit 1
         fi
         echo "✅ All required files are present"
-    
-    - name: 🐳 Build Docker image
+    - name: Build Docker image
       run: |
         echo "Building Docker image..."
         docker build -t portfolio:${{ github.sha }} .
         echo "✅ Docker image built successfully"
-    
-    - name: 🧪 Test Docker container
+    - name: Test Docker container
       run: |
         echo "Testing Docker container..."
         # شغل الحاوية مؤقتاً للتجربة
         docker run -d --name test-container -p 8080:80 portfolio:${{ github.sha }}
         sleep 5
-        
         # اختبر إذا التطبيق شغال
         echo "Testing HTTP response..."
         STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 || echo "000")
-        
         if [ "$STATUS_CODE" = "200" ]; then
           echo "✅ Container is responding correctly (HTTP 200)"
         else
           echo "❌ ERROR: Container not responding properly (HTTP $STATUS_CODE)"
           exit 1
         fi
-        
         # أوقف ونظف
         docker stop test-container
         docker rm test-container
-    
     - name: 📊 Success report
       run: |
         echo "## 🎉 CI/CD Pipeline Results" >> $GITHUB_STEP_SUMMARY
