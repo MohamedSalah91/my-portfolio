@@ -26,15 +26,17 @@ jobs:
           exit 1
         fi
         echo "✅ All required files are present"
-    
+        set -e
     - name: 🐳 Build Docker image
       run: |
         echo "Building Docker image..."
         docker build -t portfolio:${{ github.sha }} .
         echo "✅ Docker image built successfully"
+        set -e
     
     - name: 🧪 Test Docker container
       run: |
+        set -e
         echo "Testing Docker container..."
         # شغل الحاوية مؤقتاً للتجربة
         docker run -d --name test-container -p 8080:80 portfolio:${{ github.sha }}
@@ -50,7 +52,7 @@ jobs:
           echo "❌ ERROR: Container not responding properly (HTTP $STATUS_CODE)"
           exit 1
         fi
-        
+        set -e
         # أوقف ونظف
         docker stop test-container
         docker rm test-container
