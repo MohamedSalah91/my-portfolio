@@ -2,69 +2,62 @@ name: CI/CD Pipeline for Portfolio
 
 on:
   push:
-    branches: [ master  ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: 📥 Checkout code
       uses: actions/checkout@v3
-    
+
     - name: 🔍 Validate project structure
       run: |
-        echo "Checking required files..."
-        if [ ! -f "Dockerfile" ]; then
-          echo "❌ ERROR: Dockerfile not found!"
-          exit 1
-        fi
-        if [ ! -f "src/index.html" ]; then
-          echo "❌ ERROR: index.html not found!"
-          exit 1
-        fi
-        echo "✅ All required files are present"
         set -e
+        echo "Checking required files..."
+
+        [ -f Dockerfile ] || (echo "❌ Dockerfile not found" && exit 1)
+        [ -f src/index.html ] || (echo "❌ index.html not found" && exit 1)
+
+        echo "✅ All required files are present"
+
     - name: 🐳 Build Docker image
       run: |
+        set -e
         echo "Building Docker image..."
         docker build -t portfolio:${{ github.sha }} .
         echo "✅ Docker image built successfully"
-        set -e
-    
+
     - name: 🧪 Test Docker container
       run: |
         set -e
-        echo "Testing Docker container..."
-        # شغل الحاوية مؤقتاً للتجربة
+
+        cleanup() {
+          docker stop test-container || true
+          docker rm test-container || true
+        }
+        trap cleanup EXIT
+
+        echo "Starting container..."
         docker run -d --name test-container -p 8080:80 portfolio:${{ github.sha }}
         sleep 5
-        
-        # اختبر إذا التطبيق شغال
+
         echo "Testing HTTP response..."
-        STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 || echo "000")
-        
-        if [ "$STATUS_CODE" = "200" ]; then
-          echo "✅ Container is responding correctly (HTTP 200)"
-        else
-          echo "❌ ERROR: Container not responding properly (HTTP $STATUS_CODE)"
+        STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080)
+
+        if [ "$STATUS_CODE" != "200" ]; then
+          echo "❌ ERROR: HTTP $STATUS_CODE"
           exit 1
         fi
-        set -e
-        # أوقف ونظف
-        docker stop test-container
-        docker rm test-container
-    
+
+        echo "✅ Container responded with HTTP 200"
+
     - name: 📊 Success report
       run: |
         echo "## 🎉 CI/CD Pipeline Results" >> $GITHUB_STEP_SUMMARY
         echo "**Status:** ✅ SUCCESS" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📋 Build Details:" >> $GITHUB_STEP_SUMMARY
-        echo "- **Docker Image:** portfolio:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Image:** portfolio:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Branch:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### ✅ All checks passed!" >> $GITHUB_STEP_SUMMARY
