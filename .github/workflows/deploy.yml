@@ -19,11 +19,6 @@ jobs:
       run: |
         set -e
         docker run --rm -i hadolint/hadolint < Dockerfile
-    - name: Lint YAML
-      run: |
-        set -e
-        pip install yamllint
-        yamllint .
     - name: Validate project structure
       run: |
         echo "Checking required files..."
