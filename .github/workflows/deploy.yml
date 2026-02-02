@@ -27,7 +27,7 @@ jobs:
 
           test -f Dockerfile || { echo "❌ Dockerfile not found"; exit 1; }
           test -f src/index.html || { echo "❌ index.html not found"; exit 1; }
-
+          test -f src/style.css || { echo  "❌ style.css  not found"; exit 1; }
           echo "✅ Project structure is valid"
 
       - name: 🐳 Build Docker image
