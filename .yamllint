@@ -1,0 +1,18 @@
+# .yamllint
+extends: default
+
+rules:
+  line-length:
+    max: 120      # أقصى طول للسطر بدل 80
+    level: warning
+
+  indentation:
+    spaces: 2     # عدد المسافات لكل level
+    level: warning
+
+  new-line-at-end-of-file:
+    present: true
+    level: warning
+
+  trailing-spaces:
+    level: warning
