@@ -13,6 +13,5 @@ EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=5s \
     CMD wget -qo- http://localhost:80 || exit1;
 
-ENTRYPOINT ["tini", "--"]
 # Run nginx in foreground
 CMD ["nginx", "-g", "daemon off;"]
