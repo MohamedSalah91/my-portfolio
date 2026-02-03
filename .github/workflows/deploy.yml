@@ -1,11 +1,5 @@
 name: CI/CD Pipeline for Portfolio
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+on: [push]
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
