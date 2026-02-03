@@ -5,25 +5,36 @@ on:
     branches: ["master"]
   pull_request:
     branches: ["master"]
-
 jobs:
-  build-test:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Check files
+      - name: 📥 Checkout code
+        uses: actions/checkout@v3
+      - name: 🧹 Lint YAML files
         run: |
-          test -f Dockerfile
-          test -f src/index.html
-          test -f src/style.css
-      
-      - name: Build
-        run: docker build -t portfolio:${{ github.sha }} .
-      
-      - name: Test
+          pip install yamllint
+          yamllint . || true
+      - name: 🔍 Validate project structure
         run: |
-          docker run -d -p 8080:80 portfolio:${{ github.sha }}
-          sleep 2
-          curl -f http://localhost:8080
-          docker stop $(docker ps -q)
+          echo "Checking required files..."
+          test -f Dockerfile || { echo "❌ Dockerfile not found"; exit 1; }
+          test -f src/index.html || { echo "❌ index.html not found"; exit 1; }
+          test -f src/style.css || { echo  "❌ style.css  not found"; exit 1; }
+          echo "✅ Project structure is valid"
+      - name: 🐳 Build Docker image
+        run: |
+          docker build -t portfolio:${{ github.sha }} .
+      - name: 🧪 Test Docker container
+        run: |
+          docker run -d --name test-container -p 8080:80 portfolio:${{ github.sha }}
+          sleep 5
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 || echo "000")
+          if [ "$STATUS_CODE" != "200" ]; then
+            echo "❌ Container test failed (HTTP $STATUS_CODE)"
+            exit 1
+          fi
+          echo "✅ Container responding correctly"
+          docker stop test-container
+          docker rm test-container
+
