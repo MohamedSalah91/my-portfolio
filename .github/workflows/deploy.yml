@@ -35,6 +35,6 @@ jobs:
             echo "❌ Container test failed (HTTP $STATUS_CODE)"
             exit 1
           fi
-          echo "✅ Container responding correctly"
+            echo "✅ Container responding correctly"
           docker stop test-container
           docker rm test-container
